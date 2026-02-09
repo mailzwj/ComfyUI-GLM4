@@ -2,7 +2,7 @@ import os
 import json
 import base64
 import random
-from zhipuai import ZhipuAI
+from zai import ZhipuAiClient as ZhipuAI
 from PIL import Image
 import numpy as np
 import io
@@ -177,13 +177,14 @@ class GLM_Text_Chat:
                 "model_name": ("STRING", {"default": "GLM-4.5-Flash", "placeholder": "请输入模型名称，如 GLM-4.5-Flash"}),
                 "temperature": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "top_p": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "thinking": ("BOOLEAN", {"default": False}),
                 "max_tokens": ("INT", {"default": 1024, "min": 1, "max": 4096}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "设置为0时，每次运行生成随机种子；设置为其他值时，使用固定种子。注意：此种子仅影响ComfyUI节点内部的随机数生成，不直接影响智谱AI模型的输出结果。"}),
                 "text_input": ("STRING", {"multiline": True, "default": "请扩写关于一只小狗在草地上玩耍的视频提示词。", "placeholder": "请输入需要扩写的视频提示词内容"}),
             }
         }
 
-    def glm_chat_function(self, text_input, api_key, model_name, temperature, top_p, max_tokens, seed, system_prompt_override, text_system_prompt_preset):
+    def glm_chat_function(self, text_input, api_key, model_name, temperature, top_p, thinking, max_tokens, seed, system_prompt_override, text_system_prompt_preset):
         """
         执行智谱AI GLM-4 文本聊天功能。
         """
@@ -247,6 +248,9 @@ class GLM_Text_Chat:
                 temperature=temperature,
                 top_p=top_p,
                 max_tokens=max_tokens,
+                thinking={
+                    "type": "disabled" if not thinking else "enabled"
+                }
             )
             response_text = response.choices[0].message.content
             _log_info("GLM-4 响应成功。")
@@ -299,6 +303,7 @@ class GLM_Vision_ImageToPrompt:
                     "default": "glm-4v-flash",
                     "placeholder": "请输入模型名称，如 glm-4v-flash"
                 }),
+                "thinking": ("BOOLEAN", {"default": False}),
                 "api_key":  ("STRING", {
                     "multiline": False,
                     "default": "",
@@ -327,7 +332,7 @@ class GLM_Vision_ImageToPrompt:
             }
         }
 
-    def generate_prompt(self, api_key, prompt_override, model_name, seed, image_url="", image_base64="", image_prompt_preset="", image_input=None):
+    def generate_prompt(self, api_key, prompt_override, model_name, thinking, seed, image_url="", image_base64="", image_prompt_preset="", image_input=None):
         """
         执行智谱AI GLM-4V 识图生成提示词功能。
         """
@@ -433,7 +438,10 @@ class GLM_Vision_ImageToPrompt:
         try:
             response = client.chat.completions.create(
                 model=model_name,
-                messages=[{"role": "user", "content": content_parts}]
+                messages=[{"role": "user", "content": content_parts}],
+                thinking={
+                    "type": "disabled" if not thinking else "enabled"
+                }
             )
             response_content = str(response.choices[0].message.content)
             _log_info("GLM-4V 响应成功。")
@@ -484,12 +492,13 @@ class GLM_Translation_Text:
                 "model_name": ("STRING", {"default": "GLM-4.5-Flash", "placeholder": "请输入模型名称，如 GLM-4.5-Flash"}),
                 "temperature": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01, "tooltip": "翻译任务建议较低的温度值以保持准确性"}),
                 "top_p": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "thinking": ("BOOLEAN", {"default": False}),
                 "max_tokens": ("INT", {"default": 1024, "min": 1, "max": 4096}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "tooltip": "设置为0时，每次运行生成随机种子；设置为其他值时，使用固定种子。注意：此种子仅影响ComfyUI节点内部的随机数生成，不直接影响智谱AI模型的输出结果。"}),
             }
         }
 
-    def glm_translate_function(self, text_input, from_language, to_language, api_key, model_name, temperature, top_p, max_tokens, seed):
+    def glm_translate_function(self, text_input, from_language, to_language, api_key, model_name, temperature, top_p, thinking, max_tokens, seed):
         """
         执行智谱AI GLM文本翻译功能。
         """
@@ -534,6 +543,9 @@ class GLM_Translation_Text:
                 temperature=temperature,
                 top_p=top_p,
                 max_tokens=max_tokens,
+                thinking={
+                    "type": "disabled" if not thinking else "enabled"
+                }
             )
             translated_text = response.choices[0].message.content
             _log_info("GLM 翻译响应成功。")
